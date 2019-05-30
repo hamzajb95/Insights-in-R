@@ -1,4 +1,4 @@
-setwd("C:\Users\hamza.jibran\Documents\2019-05-16DialerWranglingTool\WorkFolder")
+setwd("C:\\Users\\hamza.jibran\\Documents\\2019-05-16DialerWranglingTool\\WorkFolder")
 library(dplyr)
 library(tidyr)
 library(stringr)
@@ -8,14 +8,46 @@ library(stringr)
 my_data1 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = T)
 my_data2<- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = T)
 my_data3 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = T)
-
 callReports <- rbind(my_data1,my_data2,my_data3)
+
+### Import the respective Time Agent Reports
+timeRep1 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
+timeRep1$campaign_name[1:nrow(timeRep1)] <- "Auto Live"
+
+timeRep2 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
+timeRep2$campaign_name[1:nrow(timeRep1)] <- "Auto Insurance"
+
+timeRep3 <-  read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
+timeRep3$campaign_name[1:nrow(timeRep1)] <- "Debt Consolidation"
+
+### Import Team Structure Report
+#teamStructure <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = T)
+
+###substitute Status values for Team Structure
+
+
+
+
+
+##Select Useful columns only
+LiveTimeTotal <- timeRep1 %>%
+  filter(timeRep1$USER =="TOTALS")
+LiveTimeTotal <- LiveTimeTotal[,c("USER","ID", "CALLS","LOGIN.TIME","WAIT","TALK","DISPO","PAUSE","DEAD","CUSTOMER")]
+
+AutoTimeTotal <- timeRep2 %>%
+  filter(timeRep2$USER =="TOTALS")
+AutoTimeTotal <- AutoTimeTotal[,c("USER","ID","CALLS","LOGIN.TIME","WAIT","TALK","DISPO","PAUSE","DEAD","CUSTOMER")]
+
+DebtTimeTotal <- timeRep3 %>%
+  filter(timeRep2$USER =="TOTALS")
+DebtTimeTotal <- DebtTimeTotal[,c("USER","ID","CALLS","LOGIN.TIME","WAIT","TALK","DISPO","PAUSE","DEAD","CUSTOMER")]
+
 
 
 ##restructure my_data to variables that are important
 selectedData <- callReports[,c("call_date", "phone_number_dialed", "user","campaign_id","list_id","state","length_in_sec","list_name","status_name")]
 
-##seperate call_date column from datetime to date and time 
+## seperate the calldate and call time data 
 selectedData <- separate(selectedData, call_date, into= c("call_date", "call_time") , sep= " ")
 
 ##Cleaning States Variable
@@ -25,7 +57,7 @@ is.na(selectedData$state) <- which(selectedData$state == "")
 is.na(selectedData$state) <- which(selectedData$state == "-")
 is.na(selectedData$state) <- which(nchar(as.vector(selectedData$state)) != 2)
 selectedData$state <- as.factor(selectedData$state)
-summary(selectedData$state)
+summary(selectedData$state) 
 
 
 #################################Disposition Transformations###################################
@@ -56,8 +88,8 @@ selectedData$campaign_name[selectedData$campaign_id == 1002] <- "Auto Insurance"
 
 
 ## Set length in seconds of call to 0 ##
-selectedData$length_in_sec <- replace_na(selectedData$is_workable,0)
-
+#selectedData$length_in_sec <- replace_na(selectedData$is_workable,0)
+selectedData$length_in_sec <- replace_na(selectedData$length_in_sec,0)
 ################ Create 2 new boolean variables for Connected and Conversion###################
 selectedData$is_connected[selectedData$status_name == "Business Number"] <- TRUE
 selectedData$is_connected[selectedData$status_name == "Call Back"] <- TRUE
@@ -132,6 +164,8 @@ Date <- selectedData$call_date[1]
  Live_totalConverted = sum(AutoLiveData$is_converted)
  Live_conversionRatio = (Live_totalConverted/Live_totalConnected)*100
  Live_workable = sum(AutoLiveData$is_workable)
+ Live_HC = LiveTimeTotal$ID
+ Live_occupancyRatio = ((LiveTimeTotal$CUSTOMER + LiveTimeTotal$DISPO + LiveTimeTotal$WAIT)/LiveTimeTotal$LOGIN.TIME)*100
 
 
 ######AutoInsurance#########
@@ -144,7 +178,10 @@ Auto_totalConnected = sum(AutoData$is_connected)
 Auto_connectionRatio = (Auto_totalConnected/Auto_totalDialled)*100
 Auto_totalConverted = sum(AutoData$is_converted)
 Auto_conversionRatio = (Auto_totalConverted/Auto_totalConnected)*100
+Auto_HC = AutoTimeTotal$ID
+Auto_occupancyRatio = ((AutoTimeTotal$CUSTOMER + AutoTimeTotal$DISPO + AutoTimeTotal$WAIT)/AutoTimeTotal$LOGIN.TIME)*100
 
+######DebtConsolidation#########
 DebtData<- selectedData %>%
   filter(selectedData$campaign_name == "Debt Consolidation")
 
@@ -154,6 +191,9 @@ Debt_totalConnected = sum(DebtData$is_connected)
 Debt_connectionRatio = (Debt_totalConnected/Debt_totalDialled)*100
 Debt_totalConverted = sum(DebtData$is_converted)
 Debt_conversionRatio = (Debt_totalConverted/Debt_totalConnected)*100
+Debt_HC = DebtTimeTotal$ID
+Debt_occupancyRatio = ((DebtTimeTotal$CUSTOMER + DebtTimeTotal$DISPO + DebtTimeTotal$WAIT)/DebtTimeTotal$LOGIN.TIME)*100
+
 
 ##Store results in vectors
 Date <- c(Date,Date,Date)
@@ -163,6 +203,8 @@ totalConnected <- c(Live_totalConnected, Auto_totalConnected, Debt_totalConnecte
 connectedRatio <- c(Live_connectionRatio, Auto_connectionRatio, Debt_connectionRatio)
 totalConverted <- c(Live_totalConverted, Auto_totalConverted, Debt_totalConverted)
 conversionRatio <- c(Live_conversionRatio, Auto_conversionRatio, Debt_conversionRatio)
+HC <- c(Live_HC,Auto_HC,Live_HC)
+occupancyRatio <- c(Live_occupancyRatio, Auto_occupancyRatio, Debt_occupancyRatio)
 
 
 ##create the dataframe
@@ -172,7 +214,9 @@ reportFrame <- data.frame(Date,
                           totalConnected,
                           connectedRatio,
                           totalConverted,
-                          conversionRatio)
+                          conversionRatio,
+                          HC, 
+                          occupancyRatio)
 
 #######Check if no File then add headers else dont
 setHeader <- FALSE
