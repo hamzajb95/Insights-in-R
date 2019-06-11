@@ -14,11 +14,11 @@ callReports <- rbind(my_data1,my_data2,my_data3)
 timeRep1 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
 timeRep1$campaign_name[1:nrow(timeRep1)] <- "Auto Live"
 
-timeRep2 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
-timeRep2$campaign_name[1:nrow(timeRep1)] <- "Auto Insurance"
+timeRep2 <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoInsurance
+timeRep2$campaign_name[1:nrow(timeRep2)] <- "Auto Insurance"
 
-timeRep3 <-  read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #AutoLive
-timeRep3$campaign_name[1:nrow(timeRep1)] <- "Debt Consolidation"
+timeRep3 <-  read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = F) #Debt Consolidation
+timeRep3$campaign_name[1:nrow(timeRep3)] <- "Debt Consolidation"
 
 ### Import Team Structure Report
 #teamStructure <- read.csv(file = file.choose(),strip.white=TRUE, stringsAsFactors = T)
@@ -39,7 +39,7 @@ AutoTimeTotal <- timeRep2 %>%
 AutoTimeTotal <- AutoTimeTotal[,c("USER","ID","CALLS","LOGIN.TIME","WAIT","TALK","DISPO","PAUSE","DEAD","CUSTOMER")]
 
 DebtTimeTotal <- timeRep3 %>%
-  filter(timeRep2$USER =="TOTALS")
+  filter(timeRep3$USER =="TOTALS")
 DebtTimeTotal <- DebtTimeTotal[,c("USER","ID","CALLS","LOGIN.TIME","WAIT","TALK","DISPO","PAUSE","DEAD","CUSTOMER")]
 
 
@@ -150,6 +150,7 @@ selectedData$is_converted <- replace_na(selectedData$is_converted,FALSE)
 filename <- paste(c(as.character(selectedData$call_date[1]),"MasterFile.csv"),collapse="-")
 filename <- str_replace_all(filename, "/", "-")
 write.csv(selectedData, filename, row.names = F)
+
 
 ########################################## Create Variables for Report ########################
 Date <- selectedData$call_date[1]
